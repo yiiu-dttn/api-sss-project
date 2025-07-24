@@ -1,0 +1,4 @@
+Môi trường: VS Code
+Ngôn ngữ: Python
+Cách run: New Terminal -> gõ và run dòng này: uvicorn main:app --reload
+Truy cập và test: http://127.0.0.1:8000/docs
