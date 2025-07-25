@@ -40,35 +40,44 @@ def survey_summary(db: Session = Depends(get_db)):
 
             for record in records:
                 year = record.created_at.year if record.created_at else None
-                if year is None or not record.answers:
+                if year is None:
+                    continue
+
+                survey_stats[year]['so_phieu_phat_ra'] += 1
+
+                if not record.answers:
                     continue
 
                 try:
-                    # Handle both string and dict formats of answers
-                    if isinstance(record.answers, str):
-                        answers = json.loads(record.answers.replace("'", "\""))
-                    elif isinstance(record.answers, dict):
+                    # Sửa lỗi .replace cho answers là dict
+                    if isinstance(record.answers, dict):
                         answers = record.answers
+                    elif isinstance(record.answers, str):
+                        answers = json.loads(record.answers.replace("'", '"'))
                     else:
                         continue
 
+                    is_valid = False
                     for _, value in answers.items():
                         if isinstance(value, dict):
                             continue
                         value_str = str(value).strip()
                         if value_str in valid_ratings:
                             survey_stats[year][value_str] += 1
-                            survey_stats[year]["total"] += 1
+                            survey_stats[year]['total'] += 1
+                            is_valid = True
+                    if is_valid:
+                        survey_stats[year]['so_phieu_thu_vao'] += 1
                 except Exception as e:
                     print(f"[Lỗi JSON]: {e}")
                     continue
 
             for year, counts in survey_stats.items():
-                total = counts["total"]
+                total = counts.get("total", 0)
                 if total == 0:
                     continue
 
-                # Xóa nếu đã tồn tại (tránh trùng)
+                # Xóa thống kê cũ nếu có
                 db.execute(
                     delete(SurveySummary).where(
                         and_(
@@ -81,11 +90,14 @@ def survey_summary(db: Session = Depends(get_db)):
                 summary = SurveySummary(
                     survey_id=survey.id,
                     nam_khao_sat=year,
-                    ty_le_rat_khong_hai_long=round(counts['1'] / total * 100, 2),
-                    ty_le_khong_hai_long=round(counts['2'] / total * 100, 2),
-                    ty_le_binh_thuong=round(counts['3'] / total * 100, 2),
-                    ty_le_hai_long=round(counts['4'] / total * 100, 2),
-                    ty_le_rat_hai_long=round(counts['5'] / total * 100, 2),
+                    co_so_dao_tao_id=survey.co_so_dao_tao_id,
+                    so_phieu_phat_ra=counts.get("so_phieu_phat_ra", 0),
+                    so_phieu_thu_vao=counts.get("so_phieu_thu_vao", 0),
+                    ty_le_rat_khong_hai_long=round(counts.get('1', 0) / total * 100, 2),
+                    ty_le_khong_hai_long=round(counts.get('2', 0) / total * 100, 2),
+                    ty_le_binh_thuong=round(counts.get('3', 0) / total * 100, 2),
+                    ty_le_hai_long=round(counts.get('4', 0) / total * 100, 2),
+                    ty_le_rat_hai_long=round(counts.get('5', 0) / total * 100, 2),
                     tong_so_cau_tra_loi_hop_le=total
                 )
 
@@ -93,7 +105,6 @@ def survey_summary(db: Session = Depends(get_db)):
                 all_results.append(summary)
 
         db.commit()
-
         return all_results
 
     except Exception as e:
