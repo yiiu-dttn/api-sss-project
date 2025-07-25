@@ -5,6 +5,7 @@ class SSSSurvey(Base):
     __tablename__ = "SSS_SURVEY"
     id = Column("ID", Integer, primary_key=True, index=True)
     title = Column("TITLE", String)
+    co_so_dao_tao_id = Column("CO_SO_DAO_TAO_ID", Integer)
 
 class SSSSurveyAnswer(Base):
     __tablename__ = "SSS_SURVEY_ANSWER"
@@ -19,6 +20,9 @@ class SurveySummary(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     survey_id = Column(Integer, index=True)
     nam_khao_sat = Column(Integer, index=True)
+    co_so_dao_tao_id = Column(Integer)
+    so_phieu_phat_ra = Column(Integer)
+    so_phieu_thu_vao = Column(Integer)
     ty_le_rat_khong_hai_long = Column(Float)
     ty_le_khong_hai_long = Column(Float)
     ty_le_binh_thuong = Column(Float)
